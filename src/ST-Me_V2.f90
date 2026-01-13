@@ -1,14 +1,26 @@
 module ST_Me_V2
 
-  implicit none
-  private
+    use descriptor
 
-  public :: say_hello
+    implicit none
+    private
+
+    public :: process
   
 contains
 
-  subroutine say_hello
-    print *, "Hello, ST-Me_V2!"
-  end subroutine say_hello
-  
+    function process(tDescr, sFileName) result(iRetCode)
+    
+        ! Routine arguments
+        type(descriptor_type), intent(in)   :: tDescr
+        character(len=*), intent(in)        :: sFileName
+        integer                             :: iRetCode
+        
+        ! Locals
+        
+        ! Assume success (will falsify on failure)
+        iRetCode = 0
+        
+    end function process
+
 end module ST_Me_V2
