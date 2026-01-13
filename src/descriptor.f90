@@ -48,8 +48,7 @@ contains
         integer                                 :: iErrCode
         integer                                 :: iLUN
         character(len=80)                       :: sBuffer
-        character(len=80)                       :: sLeft
-        character(len=80)                       :: sRight
+        integer, parameter                      :: MAX_LINES = 40
         character(len=80), dimension(MAX_LINES) :: svName
         character(len=80), dimension(MAX_LINES) :: svValue
         integer, dimension(MAX_LINES)           :: ivIndex
@@ -57,29 +56,29 @@ contains
         integer                                 :: iLine
         integer                                 :: iField
         integer                                 :: iPos
-        integer, dimension(size(FIELDS))        :: ivPosition
+        integer, dimension(19)                  :: ivPosition
         
         ! Constants (please do not change :) )
-        character(len=*), dimension(*), parameter   :: FIELDS = [ &
-            'LAT', &
-            'LON', &
-            'TIMEZONE', &
-            'ALTITUDE', &
-            'DISPL_HEIGHT', &
-            'ANEMO_HEIGHT', &
-            'LAND_USE', &
-            'Z0', &
-            'ALBEDO', &
+        character(len=18), dimension(19), parameter   :: FIELDS = [ &
+            'LAT               ', &
+            'LON               ', &
+            'TIMEZONE          ', &
+            'ALTITUDE          ', &
+            'DISPL_HEIGHT      ', &
+            'ANEMO_HEIGHT      ', &
+            'LAND_USE          ', &
+            'Z0                ', &
+            'ALBEDO            ', &
             'TIME_STAMP_MEANING', &
-            'TIME_STEP', &
-            'DATA_RELH', &
-            'DATA_PREC', &
-            'DATA_CLOUD_COVER', &
-            'DATA_RG', &
-            'DATA_RN', &
-            'DATA_USTAR', &
-            'DATA_H0', &
-            'DATA_STABILITY' &
+            'TIME_STEP         ', &
+            'DATA_RELH         ', &
+            'DATA_PREC         ', &
+            'DATA_CLOUD_COVER  ', &
+            'DATA_RG           ', &
+            'DATA_RN           ', &
+            'DATA_USTAR        ', &
+            'DATA_H0           ', &
+            'DATA_STABILITY    ' &
         ]
         
         ! Assume success (will falsify on failure)
@@ -226,49 +225,49 @@ contains
             return
         end if
         read(svValue(ivPosition(12)), "(a)", iostat=iErrCode) sBuffer
-        if(me % sBuffer /= "PRESENT" .and. me % sBuffer /= "MISSING") then
+        if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
             iRetCode = 25
             return
         end if
         me % lIsRelH = (sBuffer == "PRESENT")
         read(svValue(ivPosition(13)), "(a)", iostat=iErrCode) sBuffer
-        if(me % sBuffer /= "PRESENT" .and. me % sBuffer /= "MISSING") then
+        if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
             iRetCode = 26
             return
         end if
         me % lIsPrec = (sBuffer == "PRESENT")
         read(svValue(ivPosition(14)), "(a)", iostat=iErrCode) sBuffer
-        if(me % sBuffer /= "PRESENT" .and. me % sBuffer /= "MISSING") then
+        if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
             iRetCode = 27
             return
         end if
         me % lIsCloudCover = (sBuffer == "PRESENT")
         read(svValue(ivPosition(15)), "(a)", iostat=iErrCode) sBuffer
-        if(me % sBuffer /= "PRESENT" .and. me % sBuffer /= "MISSING") then
+        if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
             iRetCode = 28
             return
         end if
         me % lIsRg = (sBuffer == "PRESENT")
         read(svValue(ivPosition(16)), "(a)", iostat=iErrCode) sBuffer
-        if(me % sBuffer /= "PRESENT" .and. me % sBuffer /= "MISSING") then
+        if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
             iRetCode = 29
             return
         end if
         me % lIsRn = (sBuffer == "PRESENT")
         read(svValue(ivPosition(17)), "(a)", iostat=iErrCode) sBuffer
-        if(me % sBuffer /= "PRESENT" .and. me % sBuffer /= "MISSING") then
+        if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
             iRetCode = 30
             return
         end if
         me % lIsUstar = (sBuffer == "PRESENT")
         read(svValue(ivPosition(18)), "(a)", iostat=iErrCode) sBuffer
-        if(me % sBuffer /= "PRESENT" .and. me % sBuffer /= "MISSING") then
+        if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
             iRetCode = 31
             return
         end if
         me % lIsH0 = (sBuffer == "PRESENT")
         read(svValue(ivPosition(19)), "(a)", iostat=iErrCode) sBuffer
-        if(me % sBuffer /= "PRESENT" .and. me % sBuffer /= "MISSING") then
+        if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
             iRetCode = 32
             return
         end if
@@ -363,7 +362,6 @@ contains
         ! Locals
         integer     :: i
         character   :: c
-        character   :: iAscii
         
         ! Convert string
         do i = 1, len(sInStr)
