@@ -1,12 +1,42 @@
+! Module "descriptor", dealing with measurements location and type
+!
+! =============================================================================
+!
+! MIT License
+!
+! Copyright (c) 2026 Patrizia Favaron
+!
+! Permission is hereby granted, free of charge, to any person obtaining a copy
+! of this software and associated documentation files (the "Software"), to deal
+! in the Software without restriction, including without limitation the rights
+! to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+! copies of the Software, and to permit persons to whom the Software is
+! furnished to do so, subject to the following conditions:
+!
+! The above copyright notice and this permission notice shall be included in all
+! copies or substantial portions of the Software.
+!
+! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+! AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+! LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+! OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+! SOFTWARE.
+!
 module descriptor
+
+    use types
 
     implicit none
     
     private
     
     ! Public interface
-    integer, parameter, public  :: dp = selected_real_kind(15)
     public  :: descriptor_type
+    
+    ! Constants
+    integer, parameter  :: NUM_DATA = 16
     
     ! Data types
     type descriptor_type
@@ -22,14 +52,11 @@ module descriptor
         integer     :: iLandUse         ! Land use code (given, dimensionless, see Tech Report)
         integer     :: iDateMeaning     ! 0:Anticipated time stamp; 1:Posticipated time stamp (given)
         integer     :: iTimeStep        ! Time step expected in data (given, s)
-        logical     :: lIsRelH          ! Relative humidity presence state (given)
         logical     :: lIsPrec          ! Precipitation presence state (given)
-        logical     :: lIsCloudCover    ! Cloud cover presence state (given)
         logical     :: lIsRg            ! Global radiation presence state (given)
         logical     :: lIsRn            ! Net radiation presence state (given)
         logical     :: lIsUstar         ! Friction velocity presence state (given)
         logical     :: lIsH0            ! Turbulent sensible heat flux presence state (given)
-        logical     :: lIsStability     ! Stability parameter (zr/L) presence state (given)
     contains
         procedure   :: load
         procedure   :: dump
@@ -56,10 +83,10 @@ contains
         integer                                 :: iLine
         integer                                 :: iField
         integer                                 :: iPos
-        integer, dimension(19)                  :: ivPosition
+        integer, dimension(NUM_DATA)            :: ivPosition
         
         ! Constants (please do not change :) )
-        character(len=18), dimension(19), parameter   :: FIELDS = [ &
+        character(len=18), dimension(NUM_DATA), parameter   :: FIELDS = [ &
             'LAT               ', &
             'LON               ', &
             'TIMEZONE          ', &
@@ -71,15 +98,28 @@ contains
             'ALBEDO            ', &
             'TIME_STAMP_MEANING', &
             'TIME_STEP         ', &
-            'DATA_RELH         ', &
             'DATA_PREC         ', &
-            'DATA_CLOUD_COVER  ', &
             'DATA_RG           ', &
             'DATA_RN           ', &
             'DATA_USTAR        ', &
-            'DATA_H0           ', &
-            'DATA_STABILITY    ' &
+            'DATA_H0           '  &
         ]
+        integer, parameter  :: LAT                =  1
+        integer, parameter  :: LON                =  2
+        integer, parameter  :: TIMEZONE           =  3
+        integer, parameter  :: ALTITUDE           =  4
+        integer, parameter  :: DISPL_HEIGHT       =  5
+        integer, parameter  :: ANEMO_HEIGHT       =  6
+        integer, parameter  :: LAND_USE           =  7
+        integer, parameter  :: Z0                 =  8
+        integer, parameter  :: ALBEDO             =  9
+        integer, parameter  :: TIME_STAMP_MEANING = 10
+        integer, parameter  :: TIME_STEP          = 11
+        integer, parameter  :: DATA_PREC          = 12
+        integer, parameter  :: DATA_RG            = 13
+        integer, parameter  :: DATA_RN            = 14
+        integer, parameter  :: DATA_USTAR         = 15
+        integer, parameter  :: DATA_H0            = 16
         
         ! Assume success (will falsify on failure)
         iRetCode = 0
@@ -125,7 +165,7 @@ contains
         end if
         
         ! All found: decode individually, and apply validation rules whenever necessary
-        read(svValue(ivPosition(1)), *, iostat=iErrCode) me % rLat
+        read(svValue(ivPosition(LAT)), *, iostat=iErrCode) me % rLat
         if(iErrCode /= 0) then
             iRetCode = 3
             return
@@ -134,7 +174,7 @@ contains
             iRetCode = 4
             return
         end if
-        read(svValue(ivPosition(2)), *, iostat=iErrCode) me % rLon
+        read(svValue(ivPosition(LON)), *, iostat=iErrCode) me % rLon
         if(iErrCode /= 0) then
             iRetCode = 5
             return
@@ -143,7 +183,7 @@ contains
             iRetCode = 6
             return
         end if
-        read(svValue(ivPosition(3)), *, iostat=iErrCode) me % iTimeZone
+        read(svValue(ivPosition(TIMEZONE)), *, iostat=iErrCode) me % iTimeZone
         if(iErrCode /= 0) then
             iRetCode = 7
             return
@@ -152,7 +192,7 @@ contains
             iRetCode = 8
             return
         end if
-        read(svValue(ivPosition(4)), *, iostat=iErrCode) me % rHeight
+        read(svValue(ivPosition(ALTITUDE)), *, iostat=iErrCode) me % rHeight
         if(iErrCode /= 0) then
             iRetCode = 9
             return
@@ -161,52 +201,53 @@ contains
             iRetCode = 10
             return
         end if
-        read(svValue(ivPosition(5)), *, iostat=iErrCode) me % rZ0
+        read(svValue(ivPosition(DISPL_HEIGHT)), *, iostat=iErrCode) me % rD
         if(iErrCode /= 0) then
             iRetCode = 11
             return
         end if
-        if(me % rZ0 < 0.0d0 .or. me % rZ0 > 10.0d0) then
+        if(me % rD < 0.0d0) then
             iRetCode = 12
             return
         end if
-        read(svValue(ivPosition(6)), *, iostat=iErrCode) me % rAlbedo
+        read(svValue(ivPosition(ANEMO_HEIGHT)), *, iostat=iErrCode) me % rZr
         if(iErrCode /= 0) then
             iRetCode = 13
             return
         end if
-        if(me % rAlbedo < 0.0d0 .or. me % rAlbedo > 1.0d0) then
+        if(me % rZr < 0.0d0 .or. me % rZr > 150.0d0) then
             iRetCode = 14
             return
         end if
-        read(svValue(ivPosition(7)), *, iostat=iErrCode) me % rD
+        read(svValue(ivPosition(LAND_USE)), *, iostat=iErrCode) me % iLandUse
         if(iErrCode /= 0) then
             iRetCode = 15
             return
         end if
-        if(me % rD < 0.0d0 .or. me % rD > 10.0d0) then
+        if(me % iLandUse < 1 .or. me % iLandUse > 6) then
             iRetCode = 16
             return
         end if
-        read(svValue(ivPosition(8)), *, iostat=iErrCode) me % rZr
+        read(svValue(ivPosition(Z0)), *, iostat=iErrCode) me % rZ0
         if(iErrCode /= 0) then
             iRetCode = 17
             return
         end if
-        if(me % rZr < 0.0d0 .or. me % rZr > 150.0d0) then
+        if(me % rZ0 < 0.0d0 .or. me % rZ0 > 10.0d0) then
             iRetCode = 18
             return
         end if
-        read(svValue(ivPosition(9)), *, iostat=iErrCode) me % iLandUse
+        read(svValue(ivPosition(ALBEDO)), *, iostat=iErrCode) me % rAlbedo
         if(iErrCode /= 0) then
             iRetCode = 19
             return
         end if
-        if(me % iLandUse < 1 .or. me % iLandUse > 6) then
+        if(me % rAlbedo < 0.0d0 .or. me % rAlbedo > 1.0d0) then
+            print *, me % rAlbedo
             iRetCode = 20
             return
         end if
-        read(svValue(ivPosition(10)), *, iostat=iErrCode) me % iDateMeaning
+        read(svValue(ivPosition(TIME_STAMP_MEANING)), *, iostat=iErrCode) me % iDateMeaning
         if(iErrCode /= 0) then
             iRetCode = 21
             return
@@ -215,7 +256,7 @@ contains
             iRetCode = 22
             return
         end if
-        read(svValue(ivPosition(11)), *, iostat=iErrCode) me % iTimeStep
+        read(svValue(ivPosition(TIME_STEP)), *, iostat=iErrCode) me % iTimeStep
         if(iErrCode /= 0) then
             iRetCode = 23
             return
@@ -224,54 +265,36 @@ contains
             iRetCode = 24
             return
         end if
-        read(svValue(ivPosition(12)), "(a)", iostat=iErrCode) sBuffer
+        sBuffer = adjustl(svValue(ivPosition(DATA_PREC)))
         if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
             iRetCode = 25
             return
         end if
-        me % lIsRelH = (sBuffer == "PRESENT")
-        read(svValue(ivPosition(13)), "(a)", iostat=iErrCode) sBuffer
+        me % lIsPrec = (sBuffer == "PRESENT")
+        sBuffer = adjustl(svValue(ivPosition(DATA_RG)))
         if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
             iRetCode = 26
             return
         end if
-        me % lIsPrec = (sBuffer == "PRESENT")
-        read(svValue(ivPosition(14)), "(a)", iostat=iErrCode) sBuffer
+        me % lIsRg = (sBuffer == "PRESENT")
+        sBuffer = adjustl(svValue(ivPosition(DATA_RN)))
         if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
             iRetCode = 27
             return
         end if
-        me % lIsCloudCover = (sBuffer == "PRESENT")
-        read(svValue(ivPosition(15)), "(a)", iostat=iErrCode) sBuffer
+        me % lIsRn = (sBuffer == "PRESENT")
+        sBuffer = adjustl(svValue(ivPosition(DATA_USTAR)))
         if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
             iRetCode = 28
             return
         end if
-        me % lIsRg = (sBuffer == "PRESENT")
-        read(svValue(ivPosition(16)), "(a)", iostat=iErrCode) sBuffer
+        me % lIsUstar = (sBuffer == "PRESENT")
+        sBuffer = adjustl(svValue(ivPosition(DATA_H0)))
         if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
             iRetCode = 29
             return
         end if
-        me % lIsRn = (sBuffer == "PRESENT")
-        read(svValue(ivPosition(17)), "(a)", iostat=iErrCode) sBuffer
-        if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
-            iRetCode = 30
-            return
-        end if
-        me % lIsUstar = (sBuffer == "PRESENT")
-        read(svValue(ivPosition(18)), "(a)", iostat=iErrCode) sBuffer
-        if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
-            iRetCode = 31
-            return
-        end if
         me % lIsH0 = (sBuffer == "PRESENT")
-        read(svValue(ivPosition(19)), "(a)", iostat=iErrCode) sBuffer
-        if(sBuffer /= "PRESENT" .and. sBuffer /= "MISSING") then
-            iRetCode = 32
-            return
-        end if
-        me % lIsStability = (sBuffer == "PRESENT")
         
         ! Declare completion
         me % lFull = .true.
@@ -306,45 +329,30 @@ contains
         print "('z0: ', f9.6, '  D: ', f9.6, '  Albedo: ', f8.6)", me % rZ0, me % rD, me % rAlbedo
         print "('Land use code: ', i1, '  Date type code: ', i1, '  Time step: ', i4)", me % iLandUse, me % iDateMeaning, me % iTimeStep
         print "('List of optional data present:')"
-        if(me % lIsRelH) then
-            print "('  Relative humidity: Expected')"
-        else
-            print "('  Relative humidity: Missing')"
-        end if
         if(me % lIsPrec) then
-            print "('  Precipitation: Expected')"
+            print "('  Precipitation:       Expected')"
         else
-            print "('  Precipitation: Missing')"
-        end if
-        if(me % lIsCloudCover) then
-            print "('  Cloud cover: Expected')"
-        else
-            print "('  Cloud cover: Missing')"
+            print "('  Precipitation:       Missing')"
         end if
         if(me % lIsRg) then
-            print "('  Global radiation: Expected')"
+            print "('  Global radiation:    Expected')"
         else
-            print "('  Global radiation: Missing')"
+            print "('  Global radiation:    Missing')"
         end if
         if(me % lIsRn) then
-            print "('  Net radiation: Expected')"
+            print "('  Net radiation:       Expected')"
         else
-            print "('  Net radiation: Missing')"
+            print "('  Net radiation:       Missing')"
         end if
         if(me % lIsUstar) then
-            print "('  Friction velocity: Expected')"
+            print "('  Friction velocity:   Expected')"
         else
-            print "('  Friction velocity: Missing')"
+            print "('  Friction velocity:   Missing')"
         end if
         if(me % lIsH0) then
             print "('  Turbulent heat flux: Expected')"
         else
             print "('  Turbulent heat flux: Missing')"
-        end if
-        if(me % lIsStability) then
-            print "('  Stability parameter: Expected')"
-        else
-            print "('  Stability parameter: Missing')"
         end if
         
     end function dump
