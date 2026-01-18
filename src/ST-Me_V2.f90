@@ -46,6 +46,7 @@ contains
         
         ! Locals
         character(len=256)  :: sOutName
+        character(len=256)  :: sReportName
         integer             :: iErrCode
         type(data_set_type) :: tSet
         
@@ -102,7 +103,8 @@ contains
         
         ! Write to file
         sOutName = trim(sFileName) // ".cpf"
-        iErrCode = tSet % write_to_calpuff(tDescr, sOutName)
+        sReportName = trim(sFileName) // ".rpt"
+        iErrCode = tSet % write_to_calpuff(tDescr, sOutName, sReportName)
         if(iErrCode /= 0) then
             print *, "ST-Me:: error: Write to Calpuff failed with return code ", iErrCode
             iRetCode = 8
