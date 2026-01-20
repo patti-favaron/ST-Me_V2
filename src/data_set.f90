@@ -166,10 +166,12 @@ contains
         open(newunit=iLUN, file=sFileName, action='read', status='old', iostat=iErrCode)
         if(iErrCode /= 0) then
             iRetCode = 1
+            print *, "ST-Me:: error: File ", trim(sFileName), " not opened"
             return
         end if
         read(iLUN, "(a)", iostat=iErrCode) sBuffer  ! Skip header line
         if(iErrCode /= 0) then
+            print *, "ST-Me:: error: File ", trim(sFileName), " is empty"
             iRetCode = 2
             return
         end if
@@ -187,6 +189,8 @@ contains
         iNumData  = (iToTime - iFromTime) / me % iDeltaTime + 1
         if(iNumData <= 0) then
             iRetCode = 3
+            print *, "ST-Me:: error: File ", trim(sFileName), " contains invalid dates"
+            print *, "               ", me % sFirstDateTime, " - ", me % sLastDateTime
             close(iLUN)
             return
         end if
@@ -880,10 +884,10 @@ contains
         write(iLUN,"('   1')")
         write(iLUN,"('Prepared by ST-Me')")
         write(iLUN,"('NONE')")
-        if(tDescr % iTimeZone > 0) then
-            write(iLUN, "('UTC+',i2.2,'00')") tDescr % iTimeZone
+        if(tDescr % iTimeZone > 0) then ! Ignore time zone
+            write(iLUN, "('UTC+',i2.2,'00')") 0
         else
-            write(iLUN, "('UTC',i3.3,'00')") tDescr % iTimeZone
+            write(iLUN, "('UTC',i3.3,'00')") 0
         end if
         write(iLUN,"(i4,1x,i2,1x,i2,1x,i2,1x,i4,1x,i4,1x,i2,1x,i2,1x,i2,1x,i4)") &
             iYearFrom, iMonthFrom, iDayFrom, iHourFrom+1, 60*iMinuteFrom+iSecondFrom, &
